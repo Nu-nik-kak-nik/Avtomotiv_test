@@ -1,6 +1,5 @@
 name: Python System Monitor Tests
 
-# Когда срабатывает
 on:
   push:
     branches: [ "main", "develop" ]
