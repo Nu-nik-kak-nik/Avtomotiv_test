@@ -50,10 +50,14 @@ jobs:
             libxkbcommon-x11-dev \
             libatspi2.0-dev \
             '^libxcb.*-dev'
-
-    - name: Start Xvfb
-      run: Xvfb :99 -screen 0 1024x768x24 &
-    - name: Set DISPLAY
-      run: export DISPLAY=:99
+          sudo apt install -y libxcb-xinerama0
+    - name: Install specific PySide6 version
+      run: |
+        pip uninstall PySide6 -y
+        pip uninstall shiboken6 -y
+        pip uninstall PySide6_Addons -y
+        pip uninstall PySide6_Essentials -y
+        pip install PySide6==6.6.1
+        pip install shiboken6==6.6.1
     - name: Run tests
-      run: python run_tests.py
+      run: xvfb-run python run_tests.py
