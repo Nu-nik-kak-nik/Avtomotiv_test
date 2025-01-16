@@ -50,7 +50,9 @@ jobs:
             libxkbcommon-x11-dev \
             libatspi2.0-dev \
             '^libxcb.*-dev' \
-            libgl1
+            libgl1 \
+            libgl1-mesa-dev \
+            libglib2.0-0
           sudo apt install -y libxcb-xinerama0
     - name: Install specific PySide6 version
       run: |
