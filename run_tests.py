@@ -22,7 +22,6 @@ def run_tests():
         else:
             print(f"❗ При тестировании возникла проблема (Код завершения: {result})")
         return result == 0
-
     finally:
         sys.path.pop(0)
 
