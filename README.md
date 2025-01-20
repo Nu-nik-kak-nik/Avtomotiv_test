@@ -32,8 +32,8 @@
 ### Клонирование репозитория
 
 ```bash
-git clone https://github.com/[ваш_username]/system-monitor.git
-cd system-monitor
+git clone https://github.com/Nu-nik-kak-nik/Avtomotiv_test.git
+cd Avtomotiv_test
 ```
 
 ### Создание виртуального окружения
