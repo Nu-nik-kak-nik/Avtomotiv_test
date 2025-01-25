@@ -1,10 +1,14 @@
+import sys
+import os
 import subprocess
-from typing import Dict, Any, Optional
-
 import psutil
 import time
-import os
 import re
+from typing import Dict, Any, Optional
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
+
 from PySide6.QtCore import QObject, Signal, QTimer
 from src.database import DatabaseHandler
 from src.logger_config import get_logger
