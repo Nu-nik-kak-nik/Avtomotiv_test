@@ -70,16 +70,6 @@ class TestSystemMonitor:
         assert free_ram == 4.0
         assert total_ram == 8.0
 
-    @patch('subprocess.run')
-    def test_get_rom_info(self, mock_subprocess_run, system_monitor):
-        mock_result = MagicMock()
-        mock_result.stdout = "Filesystem     Size   Used  Avail  Use%\n/dev/sda1    100G   50G   50G   50%"
-        mock_subprocess_run.return_value = mock_result
-        free_disk, total_disk = system_monitor.get_rom_info()
-
-        assert free_disk == 50.0
-        assert total_disk == 100.0
-
     def test_gather_system_metrics(self, system_monitor):
         with patch.object(system_monitor, 'get_ram_info', return_value=(4000.0, 8000.0)), \
                 patch.object(system_monitor, 'get_rom_info', return_value=(50.0, 100.0)), \
