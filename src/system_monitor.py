@@ -129,15 +129,15 @@ class SystemMonitor(QObject):
     def get_rom_info(self) -> tuple[float, float]:
         total_disk_gb, disk_free_gb = 0.0, 0.0
         try:
-            result = subprocess.run(['pydf'], stdout=subprocess.PIPE, text=True, check=True)
+            result = subprocess.run(['df'], stdout=subprocess.PIPE, text=True, check=True)
             output = result.stdout
             lines = output.splitlines()
 
-            if len(lines) < 2:
+            if len(lines) < 3:
                 self.logger.error(f"Нет доступной информации о дисковом пространстве.")
                 return total_disk_gb, disk_free_gb
 
-            clean_line = re.sub(r'\x1b\[[0-9;]*[mG]', '', lines[1])
+            clean_line = re.sub(r'\x1b\[[0-9;]*[mG]', '', lines[2])
             parts = clean_line.split()
 
             if len(parts) < 4:
@@ -151,8 +151,8 @@ class SystemMonitor(QObject):
             available_size_cleaned = available_size.replace("G", "") if "G" in available_size else available_size
 
             try:
-                total_disk_gb = float(total_size_cleaned)
-                disk_free_gb = float(available_size_cleaned)
+                total_disk_gb = round(float(total_size_cleaned) / (1024 * 1024), 1)
+                disk_free_gb = round(float(available_size_cleaned) / (1024 * 1024), 1)
 
             except ValueError:
                 self.logger.error(f"Не удалось конвертировать значения в тип float")
