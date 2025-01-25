@@ -137,12 +137,18 @@ class SystemMonitor(QObject):
                 self.logger.error(f"Нет доступной информации о дисковом пространстве.")
                 return total_disk_gb, disk_free_gb
 
-            clean_line = re.sub(r'\x1b\[[0-9;]*[mG]', '', lines[2])
-            parts = clean_line.split()
+            device_line = next((line for line in lines if line.startswith('/dev/')), None)
 
-            if len(parts) < 4:
-                self.logger.error(f"Некорректный формат данных: {clean_line}")
+            if device_line is None:
+                self.logger.error(f"Не найдено устройство, начинающееся с /dev/")
                 return total_disk_gb, disk_free_gb
+
+            else:
+                clean_line = re.sub(r'\x1b\[[0-9;]*[mG]', '', device_line)
+                parts = clean_line.split()
+                if len(parts) < 4:
+                    self.logger.error(f"Некорректный формат данных: {clean_line}")
+                    return total_disk_gb, disk_free_gb
 
             total_size = parts[1]
             available_size = parts[3]
