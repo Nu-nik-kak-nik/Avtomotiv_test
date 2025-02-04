@@ -16,7 +16,6 @@
 - Python 3.10+
 - PySide6
 - psutil
-- pydf
 - SQLite
 - pytest
 
