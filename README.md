@@ -83,8 +83,10 @@ python -m tests.run_tests
 ### Результаты тестирования 
 ![Тесты](images/test_results.png)
 
-## 🛡️ GitHub Actions
+[//]: # (## 🛡️ GitHub Actions)
 
-### Статус тестов
+[//]: # ()
+[//]: # (### Статус тестов)
 
-[//]: # (![Тесты]&#40;https://github.com/Nu-nik-kak-nik/Avtomotiv_test/actions/workflows/python-tests.yml/badge.svg&#41;)
+[//]: # ()
+[//]: # ([//]: # &#40;![Тесты]&#40;https://github.com/Nu-nik-kak-nik/Avtomotiv_test/actions/workflows/python-tests.yml/badge.svg&#41;&#41;)
