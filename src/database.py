@@ -14,7 +14,6 @@ class DatabaseHandler:
     def __init__(self, db_name='system_monitoring.db'):
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info(f"Инициализация базы данных: {db_name}")
-
         self.db_name = db_name
         self.create_table()
 
@@ -29,8 +28,9 @@ class DatabaseHandler:
 
     def _validate_metrics(self, metrics: Dict[str, Any]) -> bool:
         """Валидация входящих метрик"""
+        # --------------------------------------------------------------------------------------------------------------
         required_keys = [
-            'time_lapse', 'monitoring_time', 'cpu_percent',
+            'time_lapse', 'monitoring_time', 'cpu_percent', 'gpu_load',
             'ram_free_mb', 'ram_total_mb', 'disk_free_gb', 'disk_total_gb'
         ]
 
@@ -38,7 +38,9 @@ class DatabaseHandler:
             return False
 
         try:
+            # --------------------------------------------------------------------------------------------------------------
             float(metrics['cpu_percent'])
+            float(metrics['gpu_load'])
             float(metrics['ram_free_mb'])
             float(metrics['ram_total_mb'])
             float(metrics['disk_free_gb'])
@@ -52,6 +54,7 @@ class DatabaseHandler:
 
     def create_table(self) -> None:
         """Создание таблицы для хранения системных метрик"""
+        # --------------------------------------------------------------------------------------------------------------
         try:
             with self._get_connection() as conn:
                             cursor = conn.cursor()
@@ -62,6 +65,7 @@ class DatabaseHandler:
                                     timestamp DATE,
                                     monitoring_time TEXT,
                                     cpu_percent REAL,
+                                    gpu_load REAL,
                                     ram_free_mb REAL,
                                     ram_total_mb REAL,
                                     disk_free_gb REAL,
@@ -74,6 +78,7 @@ class DatabaseHandler:
 
     def adding_data(self, metrics: Dict[str, Any]) -> bool:
         """Добавление метрик в базу данных"""
+        # --------------------------------------------------------------------------------------------------------------
         if not self._validate_metrics(metrics):
             return False
 
@@ -86,16 +91,18 @@ class DatabaseHandler:
                                 timestamp,
                                 monitoring_time, 
                                 cpu_percent, 
+                                gpu_load,
                                 ram_free_mb, 
                                 ram_total_mb, 
                                 disk_free_gb, 
                                 disk_total_gb
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (
                     metrics['time_lapse'],
                     datetime.now().strftime('%Y-%m-%d'),
                     metrics['monitoring_time'],
                     metrics['cpu_percent'],
+                    metrics['gpu_load'],
                     metrics['ram_free_mb'],
                     metrics['ram_total_mb'],
                     metrics['disk_free_gb'],

@@ -11,6 +11,7 @@ sys.path.insert(0, project_root)
 
 from PySide6.QtCore import QObject, Signal, QTimer
 from src.database import DatabaseHandler
+from src.gpu_monitor import GPUDetector
 from src.logger_config import get_logger
 
 
@@ -19,20 +20,25 @@ class SystemMonitor(QObject):
     update_metrics = Signal(dict)
     update_timer = Signal(str)
 
-    def __init__(self, database_handler: Optional[DatabaseHandler] = None):
+    def __init__(self, database_handler: DatabaseHandler | None = None):
         super().__init__()
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Инициализация SystemMonitor")
 
-        self.database_handler = database_handler or DatabaseHandler()
-        self.monitoring = False
-        self.start_time = None
+        self._init_system_components(database_handler)
+        self._init_time_setting()
 
+    def _init_system_components(self, database_handler: DatabaseHandler | None):
+        self.database_handler = database_handler or DatabaseHandler()
+        self.gpu_monitoring = GPUDetector()
+        self.monitoring = False
+
+    def _init_time_setting(self):
+        self.start_time = None
         self.metrics_timer = QTimer()
         self.metrics_timer.timeout.connect(self._collect_system_metrics)
         self.timer_updater = QTimer()
         self.timer_updater.timeout.connect(self._update_monitoring_time)
-
         self.time_lapse = 1
 
     def set_time_lapse(self, time_lapse: int):
@@ -97,10 +103,12 @@ class SystemMonitor(QObject):
 
     def _gather_system_metrics(self) -> Dict[str, Any]:
         """Детальный сбор системных метрик"""
+        # --------------------------------------------------------------------------------------------------------------
         try:
             cpu_usage = psutil.cpu_percent()
             ram_free_mb, total_ram_mb = self.get_ram_info()
             disk_free_gb, total_disk_gb = self.get_rom_info()
+            gpu_load = self.gpu_monitoring.get_gpu_load()
 
             if cpu_usage is None or ram_free_mb is None or total_ram_mb is None:
                 raise ValueError("Не удалось получить системные метрики")
@@ -111,6 +119,7 @@ class SystemMonitor(QObject):
             return {
                 'time_lapse': self.time_lapse,
                 'cpu_percent': cpu_usage,
+                'gpu_load': gpu_load,
                 'ram_total_mb': total_ram_mb,
                 'ram_free_mb': ram_free_mb,
                 'disk_total_gb': total_disk_gb,

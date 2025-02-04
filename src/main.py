@@ -16,20 +16,36 @@ from src.UI.design import Ui_SystemPulse
 from src.system_monitor import SystemMonitor
 from src.database import DatabaseHandler
 from src.logger_config import get_logger
+from src.system_info import SystemInfo
 
 class SystemPulse(QMainWindow):
 
     def __init__(self):
-        super(SystemPulse, self).__init__()
-        self.logger = get_logger(self.__class__.__name__)
-        self.logger.info("Инициализация SystemPulse")
+        try:
+            super(SystemPulse, self).__init__()
+            self.logger = get_logger(self.__class__.__name__)
 
+            self._init_ui()
+            self._init_system_components()
+            self._setup_connections()
+            self._post_init_setup()
+
+            self.logger.info("Инициализация SystemPulse завершена успешно")
+
+        except Exception as e:
+            self.logger.critical(f"Ошибка инициализации: {e}")
+
+    def _init_ui(self):
         self.ui = Ui_SystemPulse()
         self.ui.setupUi(self)
+        self.ui.tableWidget_DB.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
+    def _init_system_components(self):
         self.database_handler = DatabaseHandler()
         self.system_monitor = SystemMonitor()
+        self.system_info = SystemInfo()
 
+    def _setup_connections(self):
         self.system_monitor.update_metrics.connect(self.update_ui)
         self.system_monitor.update_timer.connect(self.update_timer_display)
 
@@ -37,9 +53,10 @@ class SystemPulse(QMainWindow):
         self.ui.pushButton_play.clicked.connect(self.toggle_monitoring)
         self.ui.pushButton_remove.clicked.connect(self.clear_database)
 
+    def _post_init_setup(self):
         QTimer.singleShot(100, self.setup_table_widget)
-        self.ui.tableWidget_DB.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.show_database_metrics()
+        self.output_of_system_info()
 
     def update_timer_display(self, time_str):
         """Обновление отображения времени таймера"""
@@ -72,7 +89,9 @@ class SystemPulse(QMainWindow):
 
     def _update_system_metrics(self, metrics: Dict[str, Any]):
         """Обновление системных метрик в UI"""
+        # --------------------------------------------------------------------------------------------------------------
         self.ui.progressBar_CPU.setValue(int(metrics['cpu_percent']))
+        self.ui.progressBar_GPU.setValue(int(metrics['gpu_load']))
         self.ui.label_RAM_free.setText(f"{metrics['ram_free_mb']} МБ")
         self.ui.label_RAM_all.setText(f"{metrics['ram_total_mb']} МБ")
         self.ui.label_ROM_free.setText(f"{metrics['disk_free_gb']} ГБ")
@@ -105,8 +124,10 @@ class SystemPulse(QMainWindow):
 
     def reset_ui_metrics(self):
         """Сброс метрик в интерфейсе"""
+        # --------------------------------------------------------------------------------------------------------------
         metrics_reset = {
             'progressBar_CPU': 0,
+            'progressBar_GPU': 0,
             'label_RAM_free': "0 МБ",
             'label_RAM_all': "0 МБ",
             'label_ROM_free': "0 ГБ",
@@ -163,6 +184,27 @@ class SystemPulse(QMainWindow):
         """Остановка мониторинга при активном процессе"""
         if getattr(self.system_monitor, 'monitoring', False):
             self.stop_monitoring()
+
+    def output_of_system_info(self):
+        """Заполнение полей интерфейса системной информацией."""
+        try:
+            ui_mapping = {
+                'OS': self.ui.lineEdit_OS,
+                'Hostname': self.ui.lineEdit_Hostname,
+                'Desktop Environment': self.ui.lineEdit_DE,
+                'Kernel': self.ui.lineEdit_Kernel,
+                'CPU': self.ui.lineEdit_CPU,
+                'Architecture': self.ui.lineEdit_Architecture
+            }
+
+            system_info = self.system_info.collect_system_info()
+
+            for key, ui_element in ui_mapping.items():
+                value = system_info.get(key, 'N/A')
+                ui_element.setText(value)
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при выводе системной информации: {e}")
 
 def main():
     """Точка входа в приложение"""
