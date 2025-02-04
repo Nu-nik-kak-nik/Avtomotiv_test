@@ -1,21 +1,24 @@
 import subprocess
 import re
-import logging
-from typing import Optional
 
 
-class GPUDetector:
+from src.logger_config import get_logger
+
+
+class GPUMonitoring:
 
     def __init__(self):
+        self.logger = get_logger(self.__class__.__name__)
+        self.logger.info("Инициализация GPUMonitoring")
         self.vendor: str | None = None
         self.model: str | None = None
         self._detect_gpu()
 
-    def _detect_gpu(self):
+    def _detect_gpu(self)  -> None:
         """
         Обнаружение вендора и модели видеокарты
         """
-        SUPPORTED_VENDORS = ['NVIDIA', 'AMD', 'Intel']
+        supported_vendors = ['NVIDIA', 'AMD', 'Intel']
 
         try:
             lspci_output = subprocess.run(
@@ -27,14 +30,14 @@ class GPUDetector:
 
             gpu_line = next(
                 (line for line in lspci_output
-                 if 'VGA' in line and any(vendor in line for vendor in SUPPORTED_VENDORS)),
+                 if 'VGA' in line and any(vendor in line for vendor in supported_vendors)),
                 None
             )
             if not gpu_line:
                 raise ValueError("GPU не обнаружена")
 
             self.vendor: str | None = next(
-                (vendor for vendor in SUPPORTED_VENDORS if vendor in gpu_line),
+                (vendor for vendor in supported_vendors if vendor in gpu_line),
                 None
             )
             if not self.vendor:
@@ -43,14 +46,14 @@ class GPUDetector:
             model_match = re.search(r'[\[\(](.*?)[\]\)]', gpu_line)
             self.model: str | None = model_match.group(1) if model_match else None
 
-            logging.info(
+            self.logger.info(
                 "Обнаружена GPU: Вендор = %s, Модель = %s",
                 self.vendor,
                 self.model or "Неизвестно"
             )
 
         except subprocess.CalledProcessError as e:
-            logging.error(
+            self.logger.error(
                 "Ошибка выполнения команды lspci: код = %d, вывод = %s",
                 e.returncode,
                 e.output
@@ -58,11 +61,11 @@ class GPUDetector:
             raise
 
         except ValueError as e:
-            logging.error(str(e))
+            self.logger.error(str(e))
             raise
 
         except Exception as e:
-            logging.error(
+            self.logger.error(
                 "Неожиданная ошибка при обнаружении GPU: %s",
                 str(e),
                 exc_info=True
@@ -74,7 +77,7 @@ class GPUDetector:
         Получение процента загрузки GPU в зависимости от вендора
         """
         if not self.vendor:
-            logging.error("GPU не инициализирована")
+            self.logger.error("GPU не инициализирована")
             return 0.0
 
         vendors_mapping = {
@@ -87,15 +90,14 @@ class GPUDetector:
             return vendors_mapping[self.vendor]()
 
         except Exception as e:
-            logging.error(f"Ошибка получения загрузки GPU {self.vendor}: {e}")
+            self.logger.error(f"Ошибка получения загрузки GPU {self.vendor}: {e}")
             return 0.0
 
         except KeyError:
-            logging.error(f"Неподдерживаемый вендор GPU: {self.vendor}")
+            self.logger.error(f"Неподдерживаемый вендор GPU: {self.vendor}")
             return 0.0
 
-    @staticmethod
-    def get_nvidia_load():
+    def get_nvidia_load(self) -> float:
         try:
             result = subprocess.run(
                 ['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,noheader,nounits'],
@@ -105,53 +107,51 @@ class GPUDetector:
             return float(result.stdout.strip())
 
         except subprocess.CalledProcessError:
-            logging.error("Ошибка выполнения nvidia-smi")
+            self.logger.error("Ошибка выполнения nvidia-smi")
             return 0.0
 
         except subprocess.TimeoutExpired:
-            logging.error("Превышено время ожидания nvidia-smi")
+            self.logger.error("Превышено время ожидания nvidia-smi")
             return 0.0
 
         except (ValueError, TypeError):
-            logging.error("Невозможно преобразовать загрузку NVIDIA GPU")
+            self.logger.error("Невозможно преобразовать загрузку NVIDIA GPU")
             return 0.0
 
         except Exception as e:
-            logging.error(f"Неожиданная ошибка при получении загрузки NVIDIA GPU: {e}")
+            self.logger.error(f"Неожиданная ошибка при получении загрузки NVIDIA GPU: {e}")
             return 0.0
 
-    @staticmethod
-    def get_amd_load():
+    def get_amd_load(self) -> float:
         try:
             with open('/sys/class/drm/renderD128/device/gpu_busy_percent', 'r') as f:
                 return float(f.read().strip())
 
         except FileNotFoundError:
-            logging.error("Файл gpu_busy_percent для AMD GPU не найден")
+            self.logger.error("Файл gpu_busy_percent для AMD GPU не найден")
             return 0.0
 
         except (ValueError, TypeError):
-            logging.error("Невозможно преобразовать загрузку AMD GPU")
+            self.logger.error("Невозможно преобразовать загрузку AMD GPU")
             return 0.0
 
         except Exception as e:
-            logging.error(f"Неожиданная ошибка при получении загрузки AMD GPU: {e}")
+            self.logger.error(f"Неожиданная ошибка при получении загрузки AMD GPU: {e}")
             return 0.0
 
-    @staticmethod
-    def get_intel_load():
+    def get_intel_load(self) -> float:
         try:
             with open('/sys/class/drm/renderD128/device/gt_cur_freq_mhz', 'r') as f:
                 return float(f.read().strip()) / 100
 
         except FileNotFoundError:
-            logging.error("Файл gt_cur_freq_mhz для Intel GPU не найден")
+            self.logger.error("Файл gt_cur_freq_mhz для Intel GPU не найден")
             return 0.0
 
         except (ValueError, TypeError):
-            logging.error("Невозможно преобразовать загрузку Intel GPU")
+            self.logger.error("Невозможно преобразовать загрузку Intel GPU")
             return 0.0
 
         except Exception as e:
-            logging.error(f"Неожиданная ошибка при получении загрузки Intel GPU: {e}")
+            self.logger.error(f"Неожиданная ошибка при получении загрузки Intel GPU: {e}")
             return 0.0

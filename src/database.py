@@ -10,6 +10,38 @@ from typing import Dict, Any, List
 from src.logger_config import get_logger
 
 
+CREATE_TABLE = '''CREATE TABLE IF NOT EXISTS system_metrics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    time_lapse INTEGER,
+                    timestamp DATE,
+                    monitoring_time TEXT,
+                    cpu_percent REAL,
+                    gpu_load REAL,
+                    ram_free_mb REAL,
+                    ram_total_mb REAL,
+                    disk_free_gb REAL,
+                    disk_total_gb REAL)
+                '''
+
+
+INSERT_INTO = '''INSERT INTO system_metrics (
+                    time_lapse, 
+                    timestamp,
+                    monitoring_time, 
+                    cpu_percent, 
+                    gpu_load,
+                    ram_free_mb, 
+                    ram_total_mb, 
+                    disk_free_gb, 
+                    disk_total_gb) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               '''
+
+REQUIRED_KEYS = [
+    'time_lapse', 'monitoring_time', 'cpu_percent', 'gpu_load',
+    'ram_free_mb', 'ram_total_mb', 'disk_free_gb', 'disk_total_gb'
+]
+
+
 class DatabaseHandler:
     def __init__(self, db_name='system_monitoring.db'):
         self.logger = get_logger(self.__class__.__name__)
@@ -28,24 +60,18 @@ class DatabaseHandler:
 
     def _validate_metrics(self, metrics: Dict[str, Any]) -> bool:
         """Валидация входящих метрик"""
-        # --------------------------------------------------------------------------------------------------------------
-        required_keys = [
-            'time_lapse', 'monitoring_time', 'cpu_percent', 'gpu_load',
-            'ram_free_mb', 'ram_total_mb', 'disk_free_gb', 'disk_total_gb'
-        ]
-
-        if not all(key in metrics for key in required_keys):
+        if not all(key in metrics for key in REQUIRED_KEYS):
             return False
 
         try:
-            # --------------------------------------------------------------------------------------------------------------
-            float(metrics['cpu_percent'])
-            float(metrics['gpu_load'])
-            float(metrics['ram_free_mb'])
-            float(metrics['ram_total_mb'])
-            float(metrics['disk_free_gb'])
-            float(metrics['disk_total_gb'])
-            int(metrics['time_lapse'])
+            for key in REQUIRED_KEYS:
+                if key == 'time_lapse':
+                    int(metrics[key])
+                elif key == 'monitoring_time':
+                    str(metrics[key])
+                else:
+                    float(metrics[key])
+
         except (ValueError, TypeError):
             self.logger.error(f"Неверный тип данных в метриках: {metrics}")
             return False
@@ -54,50 +80,23 @@ class DatabaseHandler:
 
     def create_table(self) -> None:
         """Создание таблицы для хранения системных метрик"""
-        # --------------------------------------------------------------------------------------------------------------
         try:
             with self._get_connection() as conn:
                             cursor = conn.cursor()
-                            cursor.execute('''
-                                CREATE TABLE IF NOT EXISTS system_metrics (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    time_lapse INTEGER,
-                                    timestamp DATE,
-                                    monitoring_time TEXT,
-                                    cpu_percent REAL,
-                                    gpu_load REAL,
-                                    ram_free_mb REAL,
-                                    ram_total_mb REAL,
-                                    disk_free_gb REAL,
-                                    disk_total_gb REAL
-                                )
-                            ''')
+                            cursor.execute(CREATE_TABLE)
                             conn.commit()
         except sqlite3.Error:
             pass
 
     def adding_data(self, metrics: Dict[str, Any]) -> bool:
         """Добавление метрик в базу данных"""
-        # --------------------------------------------------------------------------------------------------------------
         if not self._validate_metrics(metrics):
             return False
 
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('''
-                            INSERT INTO system_metrics (
-                                time_lapse, 
-                                timestamp,
-                                monitoring_time, 
-                                cpu_percent, 
-                                gpu_load,
-                                ram_free_mb, 
-                                ram_total_mb, 
-                                disk_free_gb, 
-                                disk_total_gb
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (
+                cursor.execute(INSERT_INTO, (
                     metrics['time_lapse'],
                     datetime.now().strftime('%Y-%m-%d'),
                     metrics['monitoring_time'],
@@ -109,10 +108,16 @@ class DatabaseHandler:
                     metrics['disk_total_gb']
                 ))
                 conn.commit()
+
                 self.logger.info("Метрики успешно добавлены")
                 return True
+
         except sqlite3.Error as e:
             self.logger.error(f"Ошибка при добавлении метрик: {e}")
+            return False
+
+        except Exception as unexpected_error:
+            self.logger.critical(f"Неожиданная ошибка при добавлении метрик: {unexpected_error}")
             return False
 
     def get_all_metric(self) -> List[tuple]:

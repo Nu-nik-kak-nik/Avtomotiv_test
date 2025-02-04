@@ -89,14 +89,16 @@ class SystemPulse(QMainWindow):
 
     def _update_system_metrics(self, metrics: Dict[str, Any]):
         """Обновление системных метрик в UI"""
-        # --------------------------------------------------------------------------------------------------------------
-        self.ui.progressBar_CPU.setValue(int(metrics['cpu_percent']))
-        self.ui.progressBar_GPU.setValue(int(metrics['gpu_load']))
-        self.ui.label_RAM_free.setText(f"{metrics['ram_free_mb']} МБ")
-        self.ui.label_RAM_all.setText(f"{metrics['ram_total_mb']} МБ")
-        self.ui.label_ROM_free.setText(f"{metrics['disk_free_gb']} ГБ")
-        self.ui.label_ROM_all.setText(f"{metrics['disk_total_gb']} ГБ")
-        self.ui.label_time.setText(metrics['monitoring_time'])
+        metrics_reset = {
+            'progressBar_CPU': int(metrics['cpu_percent']),
+            'progressBar_GPU': int(metrics['gpu_load']),
+            'label_RAM_free': f"{metrics['ram_free_mb']} МБ",
+            'label_RAM_all': f"{metrics['ram_total_mb']} МБ",
+            'label_ROM_free': f"{metrics['disk_free_gb']} ГБ",
+            'label_ROM_all': f"{metrics['disk_total_gb']} ГБ",
+            'label_time': metrics['monitoring_time']
+        }
+        self.put_in_ui_metrics(metrics_reset)
 
     def show_database_metrics(self):
         """Отображение сохраненных метрик в таблице"""
@@ -124,7 +126,6 @@ class SystemPulse(QMainWindow):
 
     def reset_ui_metrics(self):
         """Сброс метрик в интерфейсе"""
-        # --------------------------------------------------------------------------------------------------------------
         metrics_reset = {
             'progressBar_CPU': 0,
             'progressBar_GPU': 0,
@@ -134,10 +135,13 @@ class SystemPulse(QMainWindow):
             'label_ROM_all': "0 ГБ",
             'label_time': ""
         }
+        self.put_in_ui_metrics(metrics_reset)
 
+    def put_in_ui_metrics(self, metrics_reset: Dict[str, Any]):
         for attr, value in metrics_reset.items():
             if hasattr(getattr(self.ui, attr), 'setText'):
                 getattr(self.ui, attr).setText(value)
+
             else:
                 getattr(self.ui, attr).setValue(value)
 

@@ -4,14 +4,14 @@ import subprocess
 import psutil
 import time
 import re
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 from PySide6.QtCore import QObject, Signal, QTimer
 from src.database import DatabaseHandler
-from src.gpu_monitor import GPUDetector
+from src.gpu_monitor import GPUMonitoring
 from src.logger_config import get_logger
 
 
@@ -30,7 +30,7 @@ class SystemMonitor(QObject):
 
     def _init_system_components(self, database_handler: DatabaseHandler | None):
         self.database_handler = database_handler or DatabaseHandler()
-        self.gpu_monitoring = GPUDetector()
+        self.gpu_monitoring = GPUMonitoring()
         self.monitoring = False
 
     def _init_time_setting(self):
@@ -103,7 +103,6 @@ class SystemMonitor(QObject):
 
     def _gather_system_metrics(self) -> Dict[str, Any]:
         """Детальный сбор системных метрик"""
-        # --------------------------------------------------------------------------------------------------------------
         try:
             cpu_usage = psutil.cpu_percent()
             ram_free_mb, total_ram_mb = self.get_ram_info()
@@ -185,3 +184,31 @@ class SystemMonitor(QObject):
         except Exception as e:
             self.logger.error(f"Ошибка при получении информации о памяти: {e}")
             return total_disk_gb, disk_free_gb
+
+
+    def get_process_resources(self, pid: int) -> Dict[str, float]:
+        """
+        Получение ресурсов (CPU и Memory) для конкретного процесса
+        """
+        try:
+            # Получаем процесс по PID
+            process = psutil.Process(pid)
+
+            # Получаем использование CPU
+            cpu_percent = process.cpu_percent(interval=0.1)
+
+            # Получаем использование памяти
+            memory_percent = process.memory_percent()
+
+            return {
+                'cpu_percent': round(cpu_percent, 2),
+                'memory_percent': round(memory_percent, 2)
+            }
+
+        except psutil.NoSuchProcess:
+            self.logger.error(f"Процесс с PID {pid} не найден")
+            return {'cpu_percent': 0.0, 'memory_percent': 0.0}
+
+        except Exception as e:
+            self.logger.error(f"Ошибка получения ресурсов процесса: {e}")
+            return {'cpu_percent': 0.0, 'memory_percent': 0.0}

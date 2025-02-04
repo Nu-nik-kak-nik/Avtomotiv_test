@@ -813,7 +813,7 @@ class Ui_SystemPulse(object):
         self.labe_CPU.setText(QCoreApplication.translate("SystemPulse", u"\u0426\u041f:", None))
         self.pushButton_play.setText(QCoreApplication.translate("SystemPulse", u"\u041d\u0430\u0447\u0430\u0442\u044c \u0437\u0430\u043f\u0438\u0441\u044c", None))
 #if QT_CONFIG(tooltip)
-        self.labe_GPU.setToolTip(QCoreApplication.translate("SystemPulse", u"\u041d\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043d\u0430 \u0426\u041f \u0432 %", None))
+        self.labe_GPU.setToolTip(QCoreApplication.translate("SystemPulse", u"\u041d\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u043d\u0430 \u0432\u0438\u0434\u0435\u043e\u043a\u0430\u0440\u0442\u0443 \u0432 %", None))
 #endif // QT_CONFIG(tooltip)
         self.labe_GPU.setText(QCoreApplication.translate("SystemPulse", u"\u0412\u0438\u0434\u0435\u043e\u043a\u0430\u0440\u0442\u0430:", None))
 #if QT_CONFIG(tooltip)

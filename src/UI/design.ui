@@ -365,7 +365,7 @@ QScrollBar::sub-page:vertical:hover {
            </font>
           </property>
           <property name="toolTip">
-           <string>Нагрузка на ЦП в %</string>
+           <string>Нагрузка на видеокарту в %</string>
           </property>
           <property name="text">
            <string>Видеокарта:</string>
