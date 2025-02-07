@@ -47,6 +47,7 @@ class SystemMonitor(QObject):
         if self.monitoring:
             self.metrics_timer.stop()
             self.metrics_timer.start(self.time_lapse * 1000)
+
         self.logger.info(f"Интервал обновления установлен: {self.time_lapse} сек.")
 
     def start_monitoring(self):
@@ -58,6 +59,7 @@ class SystemMonitor(QObject):
                 self.metrics_timer.start(self.time_lapse * 1000)
                 self.timer_updater.start(1000)
                 self.logger.info("Мониторинг запущен")
+
             except Exception as e:
                 self.monitoring = False
                 self.logger.error(f"Ошибка при запуске мониторинга: {e}")
@@ -80,6 +82,7 @@ class SystemMonitor(QObject):
                 minutes, seconds = divmod(int(elapsed_time), 60)
                 time_str = f"{minutes:02d}:{seconds:02d}"
                 self.update_timer.emit(time_str)
+
         except Exception as e:
             self.logger.error(f"Ошибка обновления времени: {e}")
 
@@ -89,6 +92,7 @@ class SystemMonitor(QObject):
             elapsed_time = time.time() - self.start_time
             minutes, seconds = divmod(int(elapsed_time), 60)
             return f"{minutes:02d}:{seconds:02d}"
+
         return ""
 
     def _collect_system_metrics(self) -> None:
@@ -134,6 +138,7 @@ class SystemMonitor(QObject):
         try:
             ram = psutil.virtual_memory()
             return round(ram.available / (1024 * 1024), 2), round(ram.total / (1024 * 1024), 2)
+
         except Exception as e:
             self.logger.error(f"Ошибка получения RAM информации: {e}")
             return 0.0, 0.0
@@ -181,34 +186,7 @@ class SystemMonitor(QObject):
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Ошибка выполнения команды pydf: {e}")
             return total_disk_gb, disk_free_gb
+
         except Exception as e:
             self.logger.error(f"Ошибка при получении информации о памяти: {e}")
             return total_disk_gb, disk_free_gb
-
-
-    def get_process_resources(self, pid: int) -> Dict[str, float]:
-        """
-        Получение ресурсов (CPU и Memory) для конкретного процесса
-        """
-        try:
-            # Получаем процесс по PID
-            process = psutil.Process(pid)
-
-            # Получаем использование CPU
-            cpu_percent = process.cpu_percent(interval=0.1)
-
-            # Получаем использование памяти
-            memory_percent = process.memory_percent()
-
-            return {
-                'cpu_percent': round(cpu_percent, 2),
-                'memory_percent': round(memory_percent, 2)
-            }
-
-        except psutil.NoSuchProcess:
-            self.logger.error(f"Процесс с PID {pid} не найден")
-            return {'cpu_percent': 0.0, 'memory_percent': 0.0}
-
-        except Exception as e:
-            self.logger.error(f"Ошибка получения ресурсов процесса: {e}")
-            return {'cpu_percent': 0.0, 'memory_percent': 0.0}
